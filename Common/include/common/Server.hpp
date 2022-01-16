@@ -39,12 +39,16 @@ namespace cee
 				}
 				catch (std::exception& e)
 				{
-					fprintf(stderr, "[SERVER] Exception: %s\n", e.what());
+					char msg[512];
+					sprintf(msg, "[SERVER] Exception: %s", e.what());
+					HandleError(ErrorSeverity::ERROR, msg);
 					return false;
 				}
 				catch (boost::exception& e)
 				{
-					fprintf(stderr, "[SERVER] Boost Exception\n");
+					char msg[512];
+					sprintf(msg, "[SERVER] Boost Exception");
+					HandleError(ErrorSeverity::ERROR, msg);
 					return false;
 				}
 				printf("[SERVER] Stared!\n");
@@ -58,7 +62,9 @@ namespace cee
 				if (m_ThreadContext.joinable())
 					m_ThreadContext.join();
 				
-				printf("[SERVER] Stopped!\n");
+				char msg[512];
+				sprintf(msg, "[SERVER] Stopped!");
+				HandleError(ErrorSeverity::INFO, msg);
 			}
 			
 			void WaitForClientConnection()
@@ -68,7 +74,10 @@ namespace cee
 					{
 						if (!ec)
 						{
-							printf("[SERVER] New connection: %s\n", socket.remote_endpoint().address().to_string().c_str());
+							char msg[512];
+							sprintf(msg, "[SERVER] New connection: %s", socket.remote_endpoint().address().to_string().c_str());
+							HandleError(ErrorSeverity::INFO, msg);
+							
 							Client newConnection =
 								std::make_shared<ConnectionType>(ConnectionType::owner::server, m_AsioContext, std::move(socket), m_MessagesIn);
 								
@@ -77,16 +86,20 @@ namespace cee
 								m_DeqConnections.push_back(std::move(newConnection));
 								m_DeqConnections.back()->ConnectToClient(++m_IdCounter);
 								
-								printf("[%u] Connection Approved.\n", m_DeqConnections.back()->GetId());
+								sprintf(msg, "[%u] Connection Approved.", m_DeqConnections.back()->GetId());
+								HandleError(ErrorSeverity::INFO, msg);
 							}
 							else
 							{
-								printf("[-----] Connection Denied.");
+								sprintf(msg, "[-----] Connection Denied.");
+								HandleError(ErrorSeverity::INFO, msg);
 							}
 						}
 						else
 						{
-							printf("[SERVER] New Connection Error: %s\n", ec.message().c_str());
+							char msg[512];
+							sprintf(msg, "[SERVER] New Connection Error: %s", ec.message().c_str());
+							HandleError(ErrorSeverity::WARN, msg);
 						}
 						WaitForClientConnection();
 					});
@@ -123,10 +136,10 @@ namespace cee
 						client.reset();
 						invalidClientExists = true;
 					}
-					if (invalidClientExists)
-					{
-						m_DeqConnections.erase(std::remove(m_DeqConnections.begin(), m_DeqConnections.end(), nullptr), m_DeqConnections.end());
-					}
+				}
+				if (invalidClientExists)
+				{
+					m_DeqConnections.erase(std::remove(m_DeqConnections.begin(), m_DeqConnections.end(), nullptr), m_DeqConnections.end());
 				}
 			}
 			

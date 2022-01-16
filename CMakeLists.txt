@@ -6,5 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED yes)
 Project(CEENetApp VERSION 1.0.0 LANGUAGES CXX)
 
 add_subdirectory(Common)
+add_subdirectory(Engine)
 add_subdirectory(ClientApp)
 add_subdirectory(ServerApp)

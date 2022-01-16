@@ -43,15 +43,19 @@ namespace cee
 				} 
 				catch (std::exception& e)
 				{
-					fprintf(stderr, "Client Exception: %s\n", e.what());
+					char msg[512];
+					sprintf(msg, "Client Exception: %s", e.what());
+					HandleError(ErrorSeverity::ERROR, msg);
 					return false;
 				}
 				catch (boost::exception& e)
 				{
-					fprintf(stderr, "Boost Client Exception\n");
+					char msg[512];
+					sprintf(msg, "Boost Client Exception.");
+					HandleError(ErrorSeverity::ERROR, msg);
 					return false;
 				}
-				return true;
+				return IsConnected();
 			}
 			
 			void Disconnect()

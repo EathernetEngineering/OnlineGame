@@ -58,6 +58,13 @@ namespace cee
 												   {
 													   ReadHeader();
 												   }
+												   else
+												   {
+													   char msg[512];
+													   sprintf(msg, "Boost Client Exception: %s", ec.message().c_str());
+													   HandleError(ErrorSeverity::ERROR, msg);
+													   m_Socket.close();
+												   }
 											});
 				}
 			}
@@ -108,7 +115,9 @@ namespace cee
 											 }
 											 else
 											 {
-												 printf("[%u] WriteHeader() Failed!\n", m_Id);
+												 char msg[512];
+												 sprintf(msg, "[%u] WriteHeader() Failed!", m_Id);
+												 HandleError(ErrorSeverity::WARN, msg);
 												 m_Socket.close();
 											 }
 										});
@@ -130,7 +139,9 @@ namespace cee
 											 }
 											 else
 											 {
-												 printf("[%u] WriteBody() Failed!\n", m_Id);
+												 char msg[512];
+												 sprintf(msg, "[%u] WriteBody() Failed!", m_Id);
+												 HandleError(ErrorSeverity::WARN, msg);
 												 m_Socket.close();
 											 }
 										});
@@ -155,7 +166,9 @@ namespace cee
 																		  }
 																		  else
 																		  {
-																			  printf("[%u] ReadHeader() Failed!\n", m_Id);
+																			  char msg[512];
+																			  sprintf(msg, "[%u] ReadHeader() Failed!", m_Id);
+																			  HandleError(ErrorSeverity::WARN, msg);
 																			  m_Socket.close();
 																		  }
 																	});
@@ -172,7 +185,9 @@ namespace cee
 																		  }
 																		  else
 																		  {
-																			  printf("[%u] ReadBody() Failed!\n", m_Id);
+																			  char msg[512];
+																			  sprintf(msg, "[%u] ReadBody() Failed!", m_Id);
+																			  HandleError(ErrorSeverity::WARN, msg);
 																			  m_Socket.close();
 																		  }
 																	});
