@@ -19,7 +19,7 @@ namespace cee
 			virtual void DestroyWindow() override;
 			
 			virtual void OnUpdate() override;
-			virtual void* GetNativeWindowPtr() override { return nullptr; }
+			virtual void* GetNativeWindowPtr() override { return (void*)m_Window; }
 			
 			virtual void SetVSync(int VSync) override;
 			

@@ -27,7 +27,7 @@ namespace cee
 		void LinuxWindow::OnUpdate()
 		{
 			glfwPollEvents();
-			if (m_Context) m_Context->SwapBuffers();
+			if (m_Context) { m_Context->SwapBuffers(); }
 		}
 		
 		bool LinuxWindow::Init()

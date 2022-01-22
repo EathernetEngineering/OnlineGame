@@ -2,7 +2,14 @@
 #include <Engine/Engine.h>
 #include <common/CeeNet.hpp>
 
-enum class MessageTypes;
+enum class MessageTypes
+{
+	ServerAccept = 0,
+	ServerDeny = 1,
+	ServerPing = 2,
+	MessageAll = 3,
+	ServerMessage = 4
+};
 
 class Client : public cee::net::ClientInterface<MessageTypes>
 {
@@ -18,19 +25,20 @@ public:
 class ClientLayer : public cee::engine::Layer
 {
 public:
-	ClientLayer(const std::string& debugName, uint16_t port = 60000);
+	ClientLayer(const std::string& debugName)
+		: Layer(debugName)
+	{
+	}
 	
-	virtual void OnAttach() override;
-	virtual void OnDetach() override;
+	virtual void OnAttach() override = 0;
+	virtual void OnDetach() override = 0;
 	
-	virtual void OnEvent(cee::engine::Event& e) override;
-	virtual void OnUpdate() override;
-	virtual void OnLateUpdate() override;
-	virtual void OnFixedUpdate() override;
-	virtual void OnRender() override;
-	virtual void OnImGuiRender() override;
+	virtual void OnEvent(cee::engine::Event& e) override = 0;
+	virtual void OnUpdate() override = 0;
 	
-private:
-	uint16_t m_Port;
-	std::unique_ptr<Client> m_Client;
+	virtual void OnLateUpdate() = 0;
+	virtual void OnFixedUpdate() = 0;
+	virtual void OnRender() = 0;
+	
+	virtual void OnImGuiRender() override = 0;
 };

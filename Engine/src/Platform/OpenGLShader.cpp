@@ -19,7 +19,7 @@ namespace cee
 		
 		OpenGLShader::~OpenGLShader()
 		{
-			glDeleteProgram(m_RendererId);
+			//glDeleteProgram(m_RendererId);
 		}
 		
 		void OpenGLShader::Bind() const

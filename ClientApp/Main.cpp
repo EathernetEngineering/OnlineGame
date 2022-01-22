@@ -3,7 +3,8 @@
 
 #include <Engine/Engine.h>
 
-#include "ClientLayer.h"
+#include "ClientNetLayer.h"
+#include "ClientInterfaceLayer.h"
 
 #include <termios.h>
 #include <unistd.h>
@@ -19,7 +20,8 @@ public:
 	ClientApplication(uint16_t port = 60000)
 		: m_Port(port)
 {
-	PushLayer(new ClientLayer("Client App", port));
+	this->PushLayer(new ClientNetLayer("ClientNetLayer", m_Port));
+	this->PushLayer(new ClientInterfaceLayer("ClientInterfaceLayer"));
 }
 	
 public:

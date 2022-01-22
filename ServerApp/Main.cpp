@@ -125,7 +125,8 @@ int main(int argc, char* argv[])
 	
 	cee::net::SetErrorCallback([](cee::net::ErrorSeverity, const std::string& message)
 	{
-		printf("%s", message.c_str());
+		printf("%s\n", message.c_str());
+		fflush(stdout);
 	});
 	
 	server.reset(new Server(opts.port ? opts.port : 60000));

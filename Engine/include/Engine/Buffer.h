@@ -76,7 +76,7 @@ namespace cee
 			BufferLayout(std::initializer_list<BufferElement> elements)
 				: m_Elements(elements)
 			{
-				
+				CalculateOffsetsAndStride();
 			}
 			
 		public:

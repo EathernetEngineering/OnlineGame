@@ -19,9 +19,6 @@ namespace cee
 			
 			virtual void OnEvent(Event& e) = 0;
 			virtual void OnUpdate() = 0;
-			virtual void OnLateUpdate() = 0;
-			virtual void OnFixedUpdate() = 0;
-			virtual void OnRender() = 0;
 			virtual void OnImGuiRender() = 0;
 			
 		private:
