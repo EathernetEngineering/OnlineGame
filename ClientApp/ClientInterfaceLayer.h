@@ -1,8 +1,7 @@
 #pragma once
 #include "ClientLayer.h"
 
-#include <Engine/OrthographicCameraController.h>
-#include <Engine/Framebuffer.h>
+#include <Engine/Engine.h>
 
 #include <array>
 
@@ -35,6 +34,5 @@ private:
 	std::shared_ptr<cee::engine::Framebuffer> m_Framebuffer;
 	
 	std::unique_ptr<cee::engine::OrthographicCameraController> m_CameraController;
-	
-	std::array<float, 1000> m_FrameTimes;
+	float m_CameraTranslationSpeed;
 };

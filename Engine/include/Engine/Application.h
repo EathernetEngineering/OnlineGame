@@ -6,6 +6,8 @@
 #include <Engine/OrthographicCameraController.h>
 #include <Engine/ImGuiLayer.h>
 
+int main(int argc, char** argv);
+
 namespace cee
 {
 	namespace engine
@@ -17,7 +19,7 @@ namespace cee
 			virtual ~Application();
 			
 		public:
-			void Run();
+			void Close();
 			
 			void PushLayer(Layer* layer);
 			void PopLayer(Layer* layer);
@@ -25,10 +27,13 @@ namespace cee
 			void PopOverlay(Layer* overlay);
 			
 		public:
+			void OnEvent(Event& e);
+			
+		private:
+			void Run();
+			
 			virtual void OnAwake() = 0;
 			virtual void OnStart() = 0;
-			
-			void OnEvent(Event& e);
 			bool OnWindowClose(WindowCloseEvent& e);
 			bool OnWindowResize(WindowResizeEvent& e);
 			
@@ -36,8 +41,6 @@ namespace cee
 			Window& GetWindow() { return *m_Window; }
 			float GetPreviousFrameTime() { return m_PrevFrameTime; }
 			float GetAverageFrameTime() { return m_AverageFrameTime; }
-			
-			static size_t GetHeapMemoryAllocated() { return s_HeapMemoryAllocated; }
 			
 			static Application& Get() { return *s_Instance; }
 			
@@ -56,11 +59,7 @@ namespace cee
 			bool m_Running = false;
 			static Application* s_Instance;
 			
-		private:
-			friend void* ::operator new(std::size_t sz);
-			friend void ::operator delete(void* p) noexcept;
-			
-			static size_t s_HeapMemoryAllocated;
+			friend int ::main(int argc, char** arg);
 		};
 	}
 }

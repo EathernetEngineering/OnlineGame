@@ -3,22 +3,7 @@
 
 #include <Engine/Renderer.h>
 
-size_t cee::engine::Application::s_HeapMemoryAllocated = 0;
-
-void* operator new(std::size_t sz)
-{
-	cee::engine::Application::s_HeapMemoryAllocated += sz;
-	if(void* ptr = std::malloc(sz))
-		return ptr;
-	
-	throw std::bad_alloc{};
-}
-
-void operator delete(void* p) noexcept
-{
-	cee::engine::Application::s_HeapMemoryAllocated -= sizeof(p);
-	std::free(p);
-}
+#include <Engine/Timer.h>
 
 namespace cee
 {
@@ -61,19 +46,17 @@ namespace cee
 		{
 			m_Running = true;
 			
-			
-			std::chrono::time_point<std::chrono::high_resolution_clock> prevFrameTimepoint = std::chrono::high_resolution_clock::now();
-
+			Timer timer;
 			
 			m_ImGuiLayer = new ImGuiLayer();
 			this->PushOverlay(m_ImGuiLayer);
 			
 			while (m_Running)
 			{
-				m_PrevFrameTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - prevFrameTimepoint).count() * 0.001f * 0.001f;
+				m_PrevFrameTime = timer.ElapsedMillis();
 				m_AverageFrameTime = m_PrevFrameTime + (m_PrevFrameTime - m_AverageFrameTime)/(m_FrameIndex + 1);
 				m_FrameIndex++;
-				prevFrameTimepoint = std::chrono::high_resolution_clock::now();
+				timer.Reset();
 				
 				for (auto& layer : m_LayerStack)
 				{
@@ -87,6 +70,11 @@ namespace cee
 				m_ImGuiLayer->End();
 				m_Window->OnUpdate();
 			}
+		}
+		
+		void Application::Close()
+		{
+			m_Running = false;
 		}
 		
 		void Application::OnEvent(Event& e)

@@ -1,5 +1,7 @@
 #include "ClientNetLayer.h"
 
+#include "imgui.h"
+
 ClientNetLayer::ClientNetLayer(const std::string& debugName, uint16_t port)
 	: ClientLayer(debugName), m_Port(port)
 {
@@ -99,20 +101,6 @@ void ClientNetLayer::OnUpdate()
 					break;
 				}
 			}
-			char keyDown = 0x00;
-			read(fileno(stdin), &keyDown, 1);
-			if (keyDown == 'p')
-			{
-				m_Client->PingServer();
-			}
-			if (keyDown == 'a')
-			{
-				m_Client->MessageAll();
-			}
-			if (keyDown == 'q')
-			{
-				;
-			}
 		}
 }
 
@@ -130,4 +118,14 @@ void ClientNetLayer::OnRender()
 
 void ClientNetLayer::OnImGuiRender()
 {
+	ImGui::Begin("Networking");
+	if (ImGui::Button("Ping Server"))
+	{
+		m_Client->PingServer();
+	}
+	if (ImGui::Button("Message All"))
+	{
+		m_Client->MessageAll();
+	}
+	ImGui::End();
 }

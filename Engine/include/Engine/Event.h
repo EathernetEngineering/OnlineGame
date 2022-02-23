@@ -192,8 +192,8 @@ namespace cee
 			{
 			}
 				
-			uint32_t GetX() const { return m_MouseX; }
-			uint32_t GetY() const { return m_MouseY; }
+			float GetX() const { return m_MouseX; }
+			float GetY() const { return m_MouseY; }
 			
 			std::string ToString() const override
 			{
@@ -217,8 +217,8 @@ namespace cee
 			{
 			}
 				
-			uint32_t GetXOffset() const { return m_XOffset; }
-			uint32_t GetYOffset() const { return m_YOffset; }
+			float GetXOffset() const { return m_XOffset; }
+			float GetYOffset() const { return m_YOffset; }
 			
 			std::string ToString() const override
 			{

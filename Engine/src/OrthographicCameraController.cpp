@@ -9,34 +9,41 @@ namespace cee
 {
 	namespace engine
 	{
-		OrthographicCameraController::OrthographicCameraController(float aspectRatio, bool rotation)
-			: m_AspectRatio(aspectRatio), m_Camera(-aspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel), m_Rotation(rotation)
+		OrthographicCameraController::OrthographicCameraController(std::shared_ptr<Framebuffer> framebuffer, bool rotation)
+			: m_Framebuffer(framebuffer),
+			  m_FramebufferSize(m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Width),
+			  m_AspectRatio(framebuffer->GetSpecification().Width/framebuffer->GetSpecification().Height),
+			  m_Camera(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel),
+			  m_Rotation(rotation)
 		{
+			m_MousePosition = Input::GetMousePos();
+			m_CameraTransformScaleMatrix = glm::ortho(0.0f, m_FramebufferSize.x, 0.0f, m_FramebufferSize.y, -m_ZoomLevel, m_ZoomLevel);
 		}
 		
 		void OrthographicCameraController::OnUpdate()
 		{
 			CEE_PROFILE_FUNCTION();
 			
-			if (Input::IsKeyPressed(Key::A))
+			if (cee::engine::FramebufferSpecification spec = m_Framebuffer->GetSpecification();
+			m_FramebufferSize.x > 0.0f && m_FramebufferSize.y > 0.0f &&
+			(spec.Width != m_FramebufferSize.x || spec.Height != m_FramebufferSize.y))
 			{
-				m_CameraPosition.x -= cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-				m_CameraPosition.y -= sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
+				OnResize(spec.Width, spec.Height);
 			}
-			if (Input::IsKeyPressed(Key::D))
+			
+			if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 			{
-				m_CameraPosition.x += cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-				m_CameraPosition.y += sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-			}
-			if (Input::IsKeyPressed(Key::W))
-			{
-				m_CameraPosition.x += -sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-				m_CameraPosition.y += cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-			}
-			if (Input::IsKeyPressed(Key::S))
-			{
-				m_CameraPosition.x -= -sin(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
-				m_CameraPosition.y -= cos(glm::radians(m_CameraRotation)) * m_CameraTranslationSpeed * Application::Get().GetPreviousFrameTime() * 0.001f;
+				glm::vec4 newMousePos = glm::vec4(Input::GetMousePos(), 0.0, 1.0);
+				glm::vec4 mousePosition4 = glm::vec4(m_MousePosition, 0.0f, 1.0f);
+				
+				newMousePos = glm::ortho(0.0f, m_FramebufferSize.x, 0.0f, m_FramebufferSize.y, -m_ZoomLevel, m_ZoomLevel) * newMousePos;
+				mousePosition4 = glm::ortho(0.0f, m_FramebufferSize.x, 0.0f, m_FramebufferSize.y, -m_ZoomLevel, m_ZoomLevel) * mousePosition4;
+				
+				glm::vec2 movedDistance = glm::vec2(newMousePos - mousePosition4);
+				m_CameraPosition.x -= m_CameraTranslationSpeed * movedDistance.x;
+				m_CameraPosition.y += m_CameraTranslationSpeed * movedDistance.y;
+				
+				m_MousePosition = Input::GetMousePos();
 			}
 			
 			if (m_Rotation)
@@ -54,8 +61,6 @@ namespace cee
 				m_Camera.SetRotation(m_CameraRotation);
 			}
 			m_Camera.SetPosition(m_CameraPosition);
-			
-			m_CameraTranslationSpeed = m_ZoomLevel;
 		}
 		
 		void OrthographicCameraController::OnEvent(Event& e)
@@ -63,6 +68,7 @@ namespace cee
 			CEE_PROFILE_FUNCTION();
 			
 			EventDispatcher d(e);
+			d.Dispatch<MouseButtonPressedEvent>(CEE_BIND_EVENT_FN(OnMouseButtonPressed));
 			d.Dispatch<MouseScrolledEvent>(CEE_BIND_EVENT_FN(OrthographicCameraController::OnMouseScrolled));
 			d.Dispatch<WindowResizeEvent>(CEE_BIND_EVENT_FN(OrthographicCameraController::OnWindowResized));
 		}
@@ -70,7 +76,16 @@ namespace cee
 		void OrthographicCameraController::OnResize(float width, float height)
 		{
 			m_AspectRatio = width/height;
+			m_FramebufferSize.x = width;
+			m_FramebufferSize.y = height;
+			m_CameraTransformScaleMatrix = glm::ortho(0.0f, m_FramebufferSize.x, 0.0f, m_FramebufferSize.y, -m_ZoomLevel, m_ZoomLevel);
 			m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
+		}
+		
+		bool OrthographicCameraController::OnMouseButtonPressed(MouseButtonPressedEvent& e)
+		{
+			m_MousePosition = Input::GetMousePos();
+			return true;
 		}
 		
 		bool OrthographicCameraController::OnMouseScrolled(MouseScrolledEvent& e)
@@ -78,7 +93,7 @@ namespace cee
 			CEE_PROFILE_FUNCTION();
 			
 			m_ZoomLevel -= e.GetYOffset() * 0.25f;
-			//m_ZoomLevel = std::max(m_ZoomLevel, 0.25f);
+			m_ZoomLevel = std::max(m_ZoomLevel, 0.25f);
 			m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
 			return true;
 		}

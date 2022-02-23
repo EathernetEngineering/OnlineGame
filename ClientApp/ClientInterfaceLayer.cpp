@@ -2,9 +2,6 @@
 
 #include <imgui.h>
 
-#include <Engine/RenderCommand.h>
-#include <Engine/Renderer2D.h>
-
 ClientInterfaceLayer::ClientInterfaceLayer(const std::string& debugName)
 	: ClientLayer(debugName)
 {
@@ -18,7 +15,6 @@ ClientInterfaceLayer::ClientInterfaceLayer(const std::string& debugName)
 void ClientInterfaceLayer::OnAttach()
 {
 	using namespace cee::engine;
-	m_CameraController = std::make_unique<OrthographicCameraController>((Application::Get().GetWindow().GetWidth()/Application::Get().GetWindow().GetHeight()), true);
 	
 	FramebufferSpecification fbSpec;
 	fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -26,7 +22,7 @@ void ClientInterfaceLayer::OnAttach()
 	fbSpec.Height = 720;
 	m_Framebuffer = Framebuffer::Create(fbSpec);
 	
-	m_FrameTimes.fill(0.0f);
+	m_CameraController = std::make_unique<OrthographicCameraController>(m_Framebuffer, true);
 }
 
 void ClientInterfaceLayer::OnDetach()
@@ -47,7 +43,6 @@ void ClientInterfaceLayer::OnUpdate()
 		m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
 		(spec.Width != m_ViewportSize.x || spec.Height != m_ViewportSize.y))
 	{
-		m_CameraController->OnResize(m_ViewportSize.x, m_ViewportSize.y);
 		m_Framebuffer->Resize(m_ViewportSize.x, m_ViewportSize.y);
 	}
 	
@@ -56,6 +51,7 @@ void ClientInterfaceLayer::OnUpdate()
 	m_Framebuffer->Bind();
 	RenderCommand::SetClearColor({ m_ClearColor[0], m_ClearColor[1], m_ClearColor[2], 1.0f });
 	RenderCommand::Clear();
+	
 	m_CameraController->OnUpdate();
 	
 	Renderer2D::BeginScene(m_CameraController->GetCamera());
@@ -78,36 +74,70 @@ void ClientInterfaceLayer::OnRender()
 
 void ClientInterfaceLayer::OnImGuiRender()
 {
-	static uint32_t s_FrameTimeIndex = 0;
-	if (s_FrameTimeIndex > 1000) s_FrameTimeIndex = 0;
+	static bool dockspaceOpen = true;
+	static bool opt_fullscreen_persistant = true;
+	bool opt_fullscreen = opt_fullscreen_persistant;
+	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 	
-	m_FrameTimes[s_FrameTimeIndex] = cee::engine::Application::Get().GetPreviousFrameTime();
-	s_FrameTimeIndex++;
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+	if (opt_fullscreen)
+	{
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->Pos);
+		ImGui::SetNextWindowSize(viewport->Size);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+	}
 	
-	if (ImGui::Begin("Debug Stats"))
+	if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+		window_flags |= ImGuiWindowFlags_NoBackground;
+	
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::Begin("Dockspace", &dockspaceOpen, window_flags);
+	ImGui::PopStyleVar();
+	
+	if (opt_fullscreen)
+		ImGui::PopStyleVar(2);
+	
+	ImGuiIO& io = ImGui::GetIO();
+	ImGuiStyle& style = ImGui::GetStyle();
+	float minWinSizeX = style.WindowMinSize.x;
+	style.WindowMinSize.x = 370.0f;
+	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
 	{
-		ImGui::PlotLines("Frame Times", m_FrameTimes.data(), m_FrameTimes.size());
-		float avgFrameTime = cee::engine::Application::Get().GetAverageFrameTime();
-		ImGui::Text("Average Frame Time: %.3fms, Frame Rate %i", avgFrameTime, (int)(1000.0f/avgFrameTime));
-		ImGui::Text("Current Heap Memory Allocated: %luB", cee::engine::Application::GetHeapMemoryAllocated());
-		ImGui::End();
+		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 	}
-	if (ImGui::Begin("Color Control"))
+	
+	style.WindowMinSize.x = minWinSizeX;
+	
+	if (ImGui::BeginMenuBar())
 	{
-		ImGui::ColorEdit3("Clear Color", m_ClearColor);
-		ImGui::ColorEdit3("Quad Color", m_QuadColor);
-		ImGui::End();
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Exit")) cee::engine::Application::Get().Close();
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
 	}
-	if (ImGui::Begin("Scene"))
-	{
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-		
-		uint64_t textureId = m_Framebuffer->GetColorAttachmentRendererId();
-		ImGui::Image(reinterpret_cast<void*>(textureId), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-		
-		ImGui::End();
-	}
+	
+	ImGui::Begin("Properties");
+	ImGui::ColorEdit3("Clear Color", m_ClearColor);
+	ImGui::ColorEdit3("Quad Color", m_QuadColor);
+	ImGui::End();
+	
+	ImGui::Begin("Scene");
+	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+	m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+	
+	uint64_t textureId = m_Framebuffer->GetColorAttachmentRendererId();
+	ImGui::Image(reinterpret_cast<void*>(textureId), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+	
+	ImGui::End();
+	ImGui::End();
 }
 
 bool ClientInterfaceLayer::OnWindowResize(cee::engine::WindowResizeEvent& e)

@@ -2,8 +2,6 @@
 #include <common/CeeNet.hpp>
 #include "ClientNetLayer.h"
 
-#include <Engine/Application.h>
-
 #include <imgui.h>
 
 

@@ -5,6 +5,7 @@
 
 #include "ClientNetLayer.h"
 #include "ClientInterfaceLayer.h"
+#include "ClientDebugLayer.h"
 
 #include <termios.h>
 #include <unistd.h>
@@ -20,10 +21,13 @@ public:
 	ClientApplication(uint16_t port = 60000)
 		: m_Port(port)
 {
-	this->PushLayer(new ClientNetLayer("ClientNetLayer", m_Port));
 	this->PushLayer(new ClientInterfaceLayer("ClientInterfaceLayer"));
+	this->PushLayer(new ClientNetLayer("ClientNetLayer", m_Port));
+#if defined(CEE_DEBUG)
+	this->PushLayer(new ClientDebugLayer());
+#endif
 }
-	
+
 public:
 	virtual void OnAwake() override
 	{
@@ -40,7 +44,6 @@ private:
 int main(int argc, char** argv)
 {
 	options opts { 0 };
-	termios originalTerminalAtrrib;
 	
 	std::unique_ptr<cee::engine::Application> app;
 	
@@ -93,21 +96,7 @@ int main(int argc, char** argv)
 	
 	app.reset(new ClientApplication(opts.port ? opts.port : 60000));
 	
-	{
-		termios newTerminalAtrrib;
-		
-		tcgetattr(fileno(stdin), &originalTerminalAtrrib);
-		memcpy(&newTerminalAtrrib, &originalTerminalAtrrib, sizeof(termios));
-		
-		newTerminalAtrrib.c_lflag &= ~(ECHO|ICANON);
-		newTerminalAtrrib.c_cc[VTIME] = 0;
-		newTerminalAtrrib.c_cc[VMIN] = 0;
-		tcsetattr(fileno(stdin), TCSANOW, &newTerminalAtrrib);
-	}
-	
 	app->Run();
-	
-	tcsetattr(fileno(stdin), TCSANOW, &originalTerminalAtrrib);
 	
 finishApp:
 	

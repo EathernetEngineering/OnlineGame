@@ -15,7 +15,6 @@ class Client : public cee::net::ClientInterface<MessageTypes>
 {
 public:
 	Client() = default;
-	virtual ~Client() = default;
 	
 public:
 	void PingServer();
